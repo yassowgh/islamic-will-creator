@@ -1,0 +1,9 @@
+.dart_tool/
+build/
+*.pyc
+__pycache__/
+.env
+node_modules/
+firebase-debug.log
+.firebase/
+coverage/

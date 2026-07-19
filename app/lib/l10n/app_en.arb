@@ -1,0 +1,8 @@
+{
+  "@@locale": "en",
+  "appTitle": "Islamic Will Creator",
+  "disclaimer": "This tool does not constitute legal or religious advice. Have your will reviewed by a qualified solicitor and, for religious matters, a qualified scholar.",
+  "wasiyyaLabel": "Wasiyya (bequest)",
+  "wasiyyaCap": "A bequest may not exceed one-third of your net estate.",
+  "faraidSchedule": "Faraid schedule of shares"
+}
