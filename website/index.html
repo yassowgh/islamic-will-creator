@@ -5,23 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Islamic Inheritance Will Creator (UK)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="engine.js"></script>
 <style>
 :root{--teal:#00695c;--teal-l:#e0f2f1;--ink:#1a1a1a;--mut:#666;--warn:#8d6e00;--warn-bg:#fff8e1;--err:#b00020}
 *{box-sizing:border-box}body{font-family:Georgia,'Times New Roman',serif;margin:0;color:var(--ink);background:#fafaf7}
-header{background:var(--teal);color:#fff;padding:18px 24px}header h1{margin:0;font-size:1.4rem;font-weight:600}
-header p{margin:4px 0 0;font-size:.85rem;opacity:.9}
+header{background:var(--teal);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{margin:0;font-size:1.3rem;font-weight:600}header p{margin:2px 0 0;font-size:.8rem;opacity:.9}
+#userbox{font-size:.8rem}#userbox button{margin-left:8px}
 .disclaimer{background:var(--warn-bg);border-left:4px solid var(--warn);padding:10px 16px;font-size:.85rem;margin:0}
-main{max-width:880px;margin:0 auto;padding:16px}
+main{max-width:900px;margin:0 auto;padding:16px}
 .steps{display:flex;gap:4px;margin:12px 0 20px;flex-wrap:wrap}
-.steps button{flex:1;min-width:110px;padding:8px 4px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:.8rem;font-family:inherit}
+.steps button{flex:1;min-width:96px;padding:8px 4px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:.78rem;font-family:inherit}
 .steps button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
 .steps button.done{background:var(--teal-l)}
 .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:20px;margin-bottom:16px}
 h2{font-size:1.1rem;margin:0 0 12px;color:var(--teal)}h3{font-size:.95rem;margin:16px 0 6px}
 label{display:block;font-size:.85rem;margin:10px 0 3px}
 input,select,textarea{width:100%;padding:7px;border:1px solid #bbb;border-radius:4px;font-size:.9rem;font-family:inherit}
-.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:160px}
+input.invalid,select.invalid{border-color:var(--err);background:#fff6f6}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:150px}
 .hint{font-size:.78rem;color:var(--mut);margin-top:2px}
 .edu{background:var(--teal-l);padding:10px 14px;border-radius:4px;font-size:.82rem;margin:10px 0}
 .warnbox{background:var(--warn-bg);border-left:3px solid var(--warn);padding:8px 12px;font-size:.83rem;margin:8px 0}
@@ -29,47 +35,76 @@ input,select,textarea{width:100%;padding:7px;border:1px solid #bbb;border-radius
 .nav{display:flex;justify-content:space-between;margin-top:16px}
 button.btn{background:var(--teal);color:#fff;border:none;padding:10px 22px;border-radius:4px;font-size:.9rem;cursor:pointer;font-family:inherit}
 button.btn.sec{background:#fff;color:var(--teal);border:1px solid var(--teal)}
+button.btn:disabled{opacity:.5;cursor:not-allowed}
 table{border-collapse:collapse;width:100%;font-size:.85rem;margin:10px 0}
 th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}th{background:var(--teal-l)}
-.pie-wrap{max-width:380px;margin:0 auto}
+.pie-wrap{max-width:360px;margin:0 auto}
 #willdoc{font-size:.9rem;line-height:1.55;white-space:pre-wrap;border:1px solid #ccc;padding:28px;background:#fff}
 .range-val{font-weight:bold;color:var(--teal)}
+.heir-row{display:grid;grid-template-columns:170px 90px 1fr;gap:8px;align-items:end;margin-bottom:4px}
+.status-track{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.status-track span{padding:5px 10px;border-radius:14px;background:#eee;font-size:.75rem}
+.status-track span.on{background:var(--teal);color:#fff}
+#authgate{max-width:420px;margin:40px auto}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:#fff;max-width:460px;padding:24px;border-radius:8px}
 footer{text-align:center;font-size:.75rem;color:var(--mut);padding:20px}
-@media print{header,.disclaimer,.steps,.nav,.card:not(#step-will),footer,#willActions{display:none!important}#willdoc{border:none;padding:0}}
+@media print{header,.disclaimer,.steps,.nav,.card:not(#step-will),footer,#willActions,#userbox{display:none!important}#willdoc{border:none;padding:0}}
 </style>
 </head>
 <body>
-<header><h1>Islamic Inheritance Will Creator — England &amp; Wales</h1>
-<p>Wasiyya + faraid calculation per your school (madhhab) · prototype website</p></header>
+<header>
+<div><h1>Islamic Inheritance Will Creator — England &amp; Wales</h1>
+<p>Wasiyya + faraid per your school (madhhab)</p></div>
+<div id="userbox"></div>
+</header>
 <p class="disclaimer"><b>Important:</b> This tool does not constitute legal or religious advice. Have your will reviewed by a qualified solicitor and, for religious matters, a qualified scholar.</p>
-<main>
+
+<div class="card" id="authgate" hidden>
+<h2>Sign in to create your will</h2>
+<p style="font-size:.85rem">Your will is saved to your account so you can return, download again, and upload the signed copy.</p>
+<div id="authErr"></div>
+<label>Email</label><input id="authEmail" type="email" autocomplete="email">
+<label>Password (8+ characters)</label><input id="authPass" type="password" autocomplete="new-password">
+<div class="nav">
+<button class="btn sec" id="signupBtn">Create account</button>
+<button class="btn" id="loginBtn">Sign in</button>
+</div>
+</div>
+
+<main id="wizard" hidden>
 <div class="steps" id="stepsbar"></div>
+<div id="stepErr"></div>
 
 <div class="card" id="step-you">
 <h2>1 · About you</h2>
 <div class="row">
-<div><label>Full legal name</label><input id="fullName" placeholder="e.g. Yasser Ahmed"></div>
-<div><label>Date of birth</label><input id="dob" type="date"></div>
+<div><label>Full legal name *</label><input id="fullName" placeholder="e.g. Yasser Ahmed"></div>
+<div><label>Date of birth * <span class="hint" style="display:inline">(you must be 18 or over)</span></label><input id="dob" type="date"></div>
+<div><label>Gender *</label><select id="gender"><option value="">— select —</option><option value="male">Male</option><option value="female">Female</option></select></div>
+</div>
+<label style="margin-top:12px"><input type="checkbox" id="outsideUK" style="width:auto"> I live outside the UK</label>
+<div class="warnbox" id="outsideWarn" hidden>A will drawn under the law of England &amp; Wales can still be made if you live abroad, but which country's law governs your estate depends on your domicile and where assets are — <b>take advice from a solicitor familiar with cross-border estates</b>. Foreign assets may need a local will.</div>
+<div class="row">
+<div style="flex:2"><label>Address line *</label><input id="address" placeholder="House number and street, town"></div>
+<div id="pcDiv"><label>Postcode *</label><input id="postcode" list="pcList" placeholder="e.g. M1 2AB" autocomplete="postal-code" style="text-transform:uppercase"><datalist id="pcList"></datalist><div class="hint" id="pcStatus"></div></div>
 </div>
 <div class="row">
-<div><label>Address</label><input id="address" placeholder="Street, town, postcode"></div>
-<div><label>School of law (madhhab)</label>
+<div><label>School of law (madhhab) *</label>
 <select id="madhhab">
-<option value="hanafi">Hanafi (Sunni)</option>
-<option value="maliki">Maliki (Sunni)</option>
-<option value="shafii">Shafi'i (Sunni)</option>
-<option value="hanbali">Hanbali (Sunni)</option>
+<option value="hanafi">Hanafi (Sunni)</option><option value="maliki">Maliki (Sunni)</option>
+<option value="shafii">Shafi'i (Sunni)</option><option value="hanbali">Hanbali (Sunni)</option>
 <option value="jafari">Ja'fari (Shia)</option>
-</select>
-<div class="hint" id="madhhabHint"></div></div>
+</select><div class="hint" id="madhhabHint"></div></div>
 </div>
-<div class="edu">Your madhhab affects a few specific rules (e.g. whether a grandfather shares with siblings, and how shortfalls are handled). The calculation explains every share it produces.</div>
 </div>
 
 <div class="card" id="step-estate" hidden>
 <h2>2 · Estate &amp; liabilities</h2>
+<label>Describe your estate in your own words (optional)</label>
+<textarea id="estateNotes" rows="3" placeholder="e.g. Family home at ... (owned jointly with my wife), Barclays current account, NEST pension, car, jewellery..."></textarea>
 <div class="row">
-<div><label>Estimated gross estate (£)</label><input id="gross" type="number" min="0" value="300000"></div>
+<div><label>Estimated gross estate (£) *</label><input id="gross" type="number" min="0" value="300000"></div>
 <div><label>Funeral cost estimate (£)</label><input id="funeral" type="number" min="0" value="4000"></div>
 <div><label>Debts (£)</label><input id="debts" type="number" min="0" value="0"></div>
 </div>
@@ -78,44 +113,39 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:20px}
 <div><label>Unpaid zakat (£)</label><input id="zakat" type="number" min="0" value="0"></div>
 <div><label>Kaffarat / fidya (£)</label><input id="kaffarat" type="number" min="0" value="0"></div>
 </div>
-<label>Assets covered</label>
-<select id="scope">
-<option value="all_uk">All my assets in the UK</option>
-<option value="all_worldwide">All my assets worldwide</option>
-</select>
-<div class="edu"><b>Things a will cannot reach:</b> property held as <i>joint tenants</i> passes automatically to the co-owner outside your will (a solicitor can sever it to tenants-in-common); pensions and life insurance usually pass by nomination forms — update your pension "Expression of Wish" to match your faraid shares.</div>
-<div class="warnbox" id="worldwideWarn" hidden>Foreign assets may need a separate local will — take advice in each country.</div>
+<div class="edu"><b>Things a will cannot reach:</b> joint-tenancy property passes to the co-owner outside your will (a solicitor can sever to tenants-in-common); pensions and life insurance usually pass by nomination forms — update your pension "Expression of Wish" to match your faraid shares.</div>
 </div>
 
 <div class="card" id="step-wasiyya" hidden>
 <h2>3 · Wasiyya (bequest) — optional</h2>
-<p style="font-size:.85rem">You may leave up to <b>one-third</b> of your net estate to charity or to people who are not your Islamic heirs. The Prophet ﷺ told Sa'd ibn Abi Waqqas: <i>"A third, and a third is much"</i> (Bukhari 2742, Muslim 1628).</p>
+<p style="font-size:.85rem">You may leave up to <b>one-third</b> of your net estate to charity or to people who are not your Islamic heirs. <i>"A third, and a third is much"</i> (Bukhari 2742, Muslim 1628). If you leave nothing here, the bequest clause is simply left out of your will.</p>
 <label>Bequest: <span class="range-val" id="wasiyyaVal">0%</span> of net estate</label>
 <input id="wasiyya" type="range" min="0" max="33.33" step="0.01" value="0">
-<label>Recipient(s) — charity name &amp; registered number, or non-heir individuals</label>
-<textarea id="wasiyyaTo" rows="2" placeholder="e.g. Islamic Relief UK (charity no. 328158) — 10%"></textarea>
-<div class="warnbox">Bequests to people who are already Quranic heirs classically require the other heirs' consent after death — the generated will flags any such bequest.</div>
+<div id="wasiyyaToDiv" hidden>
+<label>Recipient(s) * — charity name &amp; registered number, or non-heir individuals</label>
+<textarea id="wasiyyaTo" rows="2" placeholder="e.g. Islamic Relief UK (charity no. 328158)"></textarea>
+</div>
 </div>
 
 <div class="card" id="step-family" hidden>
 <h2>4 · Your family (heirs)</h2>
-<div class="row">
-<div><label>Spouse</label>
-<select id="spouse"><option value="none">No spouse</option><option value="husband">Husband</option><option value="wife">Wife / wives</option></select></div>
-<div id="wivesDiv" hidden><label>Number of wives</label><input id="wives" type="number" min="1" max="4" value="1"></div>
-</div>
+<div id="spouseBlock"></div>
+<h3>Children</h3>
 <div class="row">
 <div><label>Sons</label><input id="son" type="number" min="0" value="0"></div>
 <div><label>Daughters</label><input id="daughter" type="number" min="0" value="0"></div>
+<div id="minorsDiv" hidden><label>How many of your children are under 18? *</label><input id="minors" type="number" min="0" value="0"></div>
+</div>
+<div class="warnbox" id="minorsWarn" hidden>You have children under 18 — you should <b>appoint a guardian</b> in your will (next step) to care for them if both parents die. The guardian field will be required.</div>
+<div class="row">
 <div><label>Son's sons</label><input id="sons_son" type="number" min="0" value="0"></div>
 <div><label>Son's daughters</label><input id="sons_daughter" type="number" min="0" value="0"></div>
 </div>
+<h3>Parents &amp; grandparents</h3>
 <div class="row">
 <div><label>Father alive?</label><select id="father"><option value="0">No</option><option value="1">Yes</option></select></div>
 <div><label>Mother alive?</label><select id="mother"><option value="0">No</option><option value="1">Yes</option></select></div>
 <div><label>Paternal grandfather</label><select id="paternal_grandfather"><option value="0">No</option><option value="1">Yes</option></select></div>
-</div>
-<div class="row">
 <div><label>Paternal grandmother</label><select id="paternal_grandmother"><option value="0">No</option><option value="1">Yes</option></select></div>
 <div><label>Maternal grandmother</label><select id="maternal_grandmother"><option value="0">No</option><option value="1">Yes</option></select></div>
 </div>
@@ -130,32 +160,43 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:20px}
 <div><label>Maternal half-brothers</label><input id="maternal_brother" type="number" min="0" value="0"></div>
 <div><label>Maternal half-sisters</label><input id="maternal_sister" type="number" min="0" value="0"></div>
 </div>
-<h3>Wider family (only inherit when closer heirs are absent)</h3>
+<h3>Wider family (inherit only when closer heirs are absent)</h3>
 <div class="row">
 <div><label>Full brothers' sons</label><input id="full_brothers_son" type="number" min="0" value="0"></div>
 <div><label>Paternal brothers' sons</label><input id="paternal_brothers_son" type="number" min="0" value="0"></div>
 <div><label>Full paternal uncles</label><input id="full_paternal_uncle" type="number" min="0" value="0"></div>
 <div><label>Paternal (half) uncles</label><input id="paternal_paternal_uncle" type="number" min="0" value="0"></div>
 </div>
-<div class="edu">Non-Muslim relatives and adopted children do not inherit by faraid — you can provide for them through the wasiyya third. This prototype assumes all listed heirs are Muslim; the full app asks per person.</div>
+<h3>Beneficiary names (optional but recommended — they appear in the will)</h3>
+<div id="heirNames"></div>
+<div class="edu">Non-Muslim relatives and adopted children do not inherit by faraid — provide for them through the wasiyya. This prototype assumes listed heirs are Muslim.</div>
 </div>
 
 <div class="card" id="step-executor" hidden>
-<h2>5 · Executor &amp; witnesses</h2>
+<h2>5 · Executor, witnesses &amp; guardian</h2>
 <div class="row">
-<div><label>Executor name</label><input id="execName"></div>
-<div><label>Executor address</label><input id="execAddr"></div>
+<div><label>Executor name *</label><input id="execName"></div>
+<div><label>Executor email (optional)</label><input id="execEmail" type="email"></div>
 </div>
 <div class="row">
 <div><label>Backup executor name</label><input id="exec2Name"></div>
-<div><label>Guardian for minor children (if any)</label><input id="guardian"></div>
+<div><label>Backup executor email (optional)</label><input id="exec2Email" type="email"></div>
+</div>
+<div class="row" id="guardianRow">
+<div><label id="guardianLabel">Guardian for minor children</label><input id="guardian"></div>
+<div><label>Guardian email (optional)</label><input id="guardianEmail" type="email"></div>
 </div>
 <h3>Two witnesses (both present together when you sign)</h3>
 <div class="row">
-<div><label>Witness 1 — name</label><input id="w1"></div>
-<div><label>Witness 2 — name</label><input id="w2"></div>
+<div><label>Witness 1 — name *</label><input id="w1"></div>
+<div><label>Witness 1 email (optional)</label><input id="w1Email" type="email"></div>
 </div>
-<div class="warnbox"><b>Wills Act 1837, s.15:</b> a witness (or a witness's spouse) must not be a beneficiary — otherwise that gift fails. Witnesses must be 18+ and of sound mind. Choose witnesses who inherit nothing under this will.</div>
+<div class="row">
+<div><label>Witness 2 — name *</label><input id="w2"></div>
+<div><label>Witness 2 email (optional)</label><input id="w2Email" type="email"></div>
+</div>
+<div class="warnbox"><b>Wills Act 1837, s.15:</b> a witness (or a witness's spouse) must not be a beneficiary — otherwise that gift fails. Witnesses must be 18+ and of sound mind.</div>
+<div id="witnessConflict"></div>
 <label>Funeral wishes</label>
 <textarea id="funeralWishes" rows="2">Islamic burial without unnecessary delay; ghusl and janazah prayer; no cremation; burial in the Muslim section of a cemetery.</textarea>
 </div>
@@ -167,16 +208,32 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:20px}
 <div id="resultsTable"></div>
 <div id="blockedList"></div>
 <div id="notesList"></div>
+<p><button class="btn sec" id="editSharesBtn">Can I change these percentages?</button></p>
 <div class="hint">Calculations follow published classical rules of your selected school (engine v1.0.0, parity-tested against 1,235 reference cases). For complex family situations, confirm with a qualified scholar.</div>
 </div>
 
 <div class="card" id="step-will" hidden>
-<h2>7 · Your will (preview)</h2>
+<h2>7 · Your will (review)</h2>
 <div id="willActions" style="margin-bottom:10px">
-<button class="btn" onclick="window.print()">Print / save as PDF</button>
-<span class="hint" style="display:inline"> — print it, sign before both witnesses together, have them sign, keep it safe.</span>
+<button class="btn sec" onclick="go(0)">Add / edit details</button>
+<span class="hint" style="display:inline"> You can edit names, executor, assets etc. — the shares themselves stay as calculated.</span>
 </div>
 <div id="willdoc"></div>
+</div>
+
+<div class="card" id="step-download" hidden>
+<h2>8 · Download, sign &amp; upload</h2>
+<div class="status-track" id="statusTrack"></div>
+<p style="font-size:.88rem"><b>1. Download &amp; print.</b> Print your will single-sided and initial each page.</p>
+<button class="btn" id="downloadBtn">Download / print my will</button>
+<p style="font-size:.88rem;margin-top:14px"><b>2. Sign.</b> Sign the attestation page with <b>both witnesses present together</b>; they then sign in front of you (Wills Act 1837 s.9).</p>
+<p style="font-size:.88rem"><b>3. Upload the signed copy</b> (photos of each page — kept in your account).</p>
+<div id="uploadBlock">
+<input type="file" id="scanFiles" accept="image/*" multiple>
+<button class="btn sec" id="uploadBtn">Upload signed will</button>
+<div id="uploadStatus"></div>
+</div>
+<div class="warnbox">Keep the original paper will somewhere safe and tell your executor where it is. The upload is a convenience copy, not the legal original.</div>
 </div>
 
 <div class="nav">
@@ -184,143 +241,8 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:20px}
 <button class="btn" id="nextBtn">Next</button>
 </div>
 </main>
-<footer>Prototype — data stays in your browser; nothing is uploaded. The full app adds accounts, secure storage, document tracking, scan upload and OCR verification.<br>
-Note: the Inheritance (Provision for Family and Dependants) Act 1975 lets certain dependants claim against an estate; estates over the IHT nil-rate band should take tax advice.</footer>
-<script>
-const $ = (id) => document.getElementById(id);
-const STEPS = ["step-you","step-estate","step-wasiyya","step-family","step-executor","step-results","step-will"];
-const NAMES = ["About you","Estate","Wasiyya","Family","Executor","Shares","Will"];
-let cur = 0, pie = null;
-const HINTS = {hanafi:"Largest school in the UK; grandfather excludes siblings.",
- maliki:"Grandfather shares with siblings (best-of rule).",
- shafii:"Grandfather shares with siblings; mushtaraka applied.",
- hanbali:"Close to Shafi'i on grandfather; no mushtaraka.",
- jafari:"Class system; no awl; spouse always inherits."};
-function renderSteps(){
-  const bar = $("stepsbar"); bar.innerHTML = "";
-  STEPS.forEach((s,i)=>{const b=document.createElement("button");
-    b.textContent=(i+1)+". "+NAMES[i];
-    b.className=i===cur?"active":i<cur?"done":"";
-    b.onclick=()=>go(i);bar.appendChild(b);});
-  STEPS.forEach((s,i)=>$(s).hidden=i!==cur);
-  $("prevBtn").style.visibility=cur===0?"hidden":"visible";
-  $("nextBtn").textContent=cur===STEPS.length-1?"Start over":"Next";
-}
-function go(i){cur=i;
-  if(STEPS[cur]==="step-results")runCalc();
-  if(STEPS[cur]==="step-will")renderWill();
-  renderSteps();window.scrollTo(0,0);}
-$("prevBtn").onclick=()=>go(Math.max(0,cur-1));
-$("nextBtn").onclick=()=>{if(cur===STEPS.length-1){location.reload();return;}go(cur+1);};
-$("madhhab").onchange=()=>$("madhhabHint").textContent=HINTS[$("madhhab").value];
-$("madhhab").onchange();
-$("scope").onchange=()=>$("worldwideWarn").hidden=$("scope").value!=="all_worldwide";
-$("wasiyya").oninput=()=>$("wasiyyaVal").textContent=Number($("wasiyya").value).toFixed(2)+"%";
-$("spouse").onchange=()=>$("wivesDiv").hidden=$("spouse").value!=="wife";
-
-function heirsFromForm(){
-  const h=[];
-  const sp=$("spouse").value;
-  if(sp==="husband")h.push({relationship:"husband"});
-  if(sp==="wife")h.push({relationship:"wife",count:Math.min(4,Math.max(1,+$("wives").value||1))});
-  ["son","daughter","sons_son","sons_daughter","full_brother","full_sister",
-   "paternal_brother","paternal_sister","maternal_brother","maternal_sister",
-   "full_brothers_son","paternal_brothers_son","full_paternal_uncle",
-   "paternal_paternal_uncle"].forEach(r=>{const v=+$(r).value||0;if(v>0)h.push({relationship:r,count:v});});
-  ["father","mother","paternal_grandfather","paternal_grandmother",
-   "maternal_grandmother"].forEach(r=>{if($(r).value==="1")h.push({relationship:r});});
-  return h;
-}
-let lastResult=null,lastEstate=null;
-function runCalc(){
-  const E=window.FaraidEngine;$("calcError").innerHTML="";
-  let est=null;
-  try{
-    est=E.settleEstate({grossEstate:+$("gross").value||0,funeralCosts:+$("funeral").value||0,
-      debts:+$("debts").value||0,unpaidMahr:+$("mahr").value||0,unpaidZakat:+$("zakat").value||0,
-      kaffarat:+$("kaffarat").value||0,wasiyyaFraction:(+$("wasiyya").value||0)/100});
-  }catch(e){$("calcError").innerHTML='<div class="errbox">'+e.message+'</div>';return;}
-  let res;
-  try{res=E.calculate($("madhhab").value,heirsFromForm());}
-  catch(e){$("calcError").innerHTML='<div class="errbox">'+e.message+'</div>';return;}
-  lastResult=res;lastEstate=est;
-  const dist=est.distributable.toNumber();
-  let rows="<table><tr><th>Heir</th><th>Share</th><th>%</th><th>£</th><th>Why</th></tr>";
-  const labels=[],data=[];
-  for(const s of res.shares){
-    if(s.total.isZero())continue;
-    const pct=s.total.toNumber()*100;
-    labels.push(pretty(s.relationship)+(s.count>1?" ×"+s.count:""));data.push(pct);
-    rows+=`<tr><td>${pretty(s.relationship)}${s.count>1?" ×"+s.count:""}</td><td>${s.total.toString()}</td><td>${pct.toFixed(2)}%</td><td>£${(dist*s.total.toNumber()).toLocaleString(undefined,{maximumFractionDigits:0})}</td><td style="font-size:.78rem">${s.reason}</td></tr>`;
-  }
-  rows+="</table>";
-  rows=`<p style="font-size:.85rem">Net estate £${est.net.toNumber().toLocaleString()} − wasiyya £${est.wasiyya.toNumber().toLocaleString(undefined,{maximumFractionDigits:0})} = <b>£${dist.toLocaleString(undefined,{maximumFractionDigits:0})} distributable</b>${res.awl?" · <b>awl applied</b>":""}${res.radd?" · <b>radd applied</b>":""}</p>`+rows;
-  $("resultsTable").innerHTML=rows;
-  $("blockedList").innerHTML=res.blocked.length?"<h3>Not inheriting (with reason)</h3><ul style='font-size:.82rem'>"+res.blocked.map(b=>`<li><b>${pretty(b.relationship)}${b.count>1?" ×"+b.count:""}</b> — ${b.reason}</li>`).join("")+"</ul>":"";
-  $("notesList").innerHTML=[...res.notes.map(x=>`<div class="edu">${x}</div>`),...res.warnings.map(x=>`<div class="warnbox">${x}</div>`)].join("");
-  if(pie)pie.destroy();
-  pie=new Chart($("pie"),{type:"pie",data:{labels,datasets:[{data}]},
-    options:{plugins:{legend:{position:"bottom",labels:{font:{size:11}}}}}});
-}
-function pretty(r){return r.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())
-  .replace("Sons Son","Son's son").replace("Sons Daughter","Son's daughter")
-  .replace("Brothers Son","brother's son").replace("Uncles Son","uncle's son");}
-function renderWill(){
-  if(!lastResult)runCalc();
-  const r=lastResult,est=lastEstate;if(!r)return;
-  const name=$("fullName").value||"[FULL LEGAL NAME]";
-  const addr=$("address").value||"[ADDRESS]";
-  const dob=$("dob").value||"[DATE OF BIRTH]";
-  const school=$("madhhab").options[$("madhhab").selectedIndex].text;
-  const wasPct=Number($("wasiyya").value)||0;
-  let sched="";
-  for(const s of r.shares)if(!s.total.isZero())
-    sched+=`   ${pretty(s.relationship)}${s.count>1?" (×"+s.count+", shared)":""}: ${s.total.toString()} (${(s.total.toNumber()*100).toFixed(2)}%)\n`;
-  $("willdoc").textContent=
-`LAST WILL AND TESTAMENT
-
-of ${name}, of ${addr}, born ${dob}.
-
-1. DECLARATION OF FAITH. I declare that I am a Muslim. I bear witness that there is no god but Allah and that Muhammad (peace be upon him) is His Messenger. I direct that my estate be distributed in accordance with the Islamic law of inheritance of the ${school} school, as set out in this will.
-
-2. REVOCATION. I revoke all former wills and codicils made by me.
-
-3. EXECUTORS. I appoint ${$("execName").value||"[EXECUTOR]"} of ${$("execAddr").value||"[ADDRESS]"} as my executor and trustee; if unable or unwilling, I appoint ${$("exec2Name").value||"[BACKUP EXECUTOR]"} in substitution. My executors shall have the standard administrative powers of personal representatives, including the powers in the Trustee Act 2000.
-
-4. GUARDIANSHIP. If any of my children are under 18 at my death and no other person has parental responsibility, I appoint ${$("guardian").value||"[GUARDIAN]"} to be their guardian.
-
-5. FUNERAL WISHES. ${$("funeralWishes").value}
-
-6. PAYMENT OF DEBTS FIRST. My executors shall first pay my funeral and burial expenses and then all my debts, including any unpaid mahr owed to my wife, unpaid zakat, kaffarat and fidya, before any distribution.
-
-7. WASIYYA (BEQUEST). ${wasPct>0?`I give ${wasPct.toFixed(2)}% of my net estate (not exceeding one-third) to: ${$("wasiyyaTo").value||"[RECIPIENTS]"}. If any recipient is also an heir under the Schedule, that gift shall take effect only with the consent of my other heirs, per classical Islamic law.`:"I make no bequest under this clause."}
-
-8. RESIDUARY ESTATE. My executors shall distribute the residue of my estate in accordance with the Schedule of Faraid Shares below, calculated per the ${school} school${r.awl?" (awl applied)":""}${r.radd?" (radd applied)":""}. If the family circumstances at my death differ from the Schedule, or any named heir predeceases me, my residuary estate shall instead be distributed in accordance with the Islamic law of inheritance of the ${school} school as determined by a qualified Islamic scholar chosen by my executors.
-
-SCHEDULE OF FARAID SHARES (calculated ${new Date().toISOString().slice(0,10)}, engine v1.0.0)
-${sched}
-9. INHERITANCE ACT NOTE. I am aware that under the Inheritance (Provision for Family and Dependants) Act 1975 certain dependants may claim against my estate notwithstanding this will.
-
-10. ATTESTATION. Signed by me, ${name}, in the joint presence of the two witnesses named below, who each signed in my presence and in the presence of each other (Wills Act 1837, s.9).
-
-
-Signature of testator: _________________________    Date: ______________
-
-
-WITNESS 1 (must not be a beneficiary or a beneficiary's spouse)
-Name: ${$("w1").value||"____________________"}   Signature: __________________
-Address: ______________________________   Occupation: ________________
-
-WITNESS 2 (must not be a beneficiary or a beneficiary's spouse)
-Name: ${$("w2").value||"____________________"}   Signature: __________________
-Address: ______________________________   Occupation: ________________
-
-------------------------------------------------------------------
-This document was generated by a software tool and does not constitute
-legal or religious advice. Have it reviewed by a qualified solicitor
-and, for religious matters, a qualified scholar before signing.`;
-}
-renderSteps();
-</script>
+<div id="modalHost"></div>
+<footer>Data is saved to your account only when signed in; guest mode keeps everything in your browser. Inheritance (Provision for Family and Dependants) Act 1975 note: certain dependants can claim against an estate. Estates over the IHT nil-rate band should take tax advice.</footer>
+<script src="site.js"></script>
 </body>
 </html>

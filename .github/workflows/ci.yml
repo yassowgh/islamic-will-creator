@@ -51,3 +51,10 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
+      - name: Deploy Firestore rules (no-op until Firestore is enabled)
+        continue-on-error: true
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+          npx -y firebase-tools deploy --only firestore:rules --project islamic-will-creator-9cedf --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json

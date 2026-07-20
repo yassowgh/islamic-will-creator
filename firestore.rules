@@ -53,6 +53,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Website prototype tree: each signed-in user owns their will data.
+    match /users/{uid}/{document=**} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
     match /settings/{doc} {
       allow read: if signedIn();
       allow write: if false; // super admin via Cloud Function
